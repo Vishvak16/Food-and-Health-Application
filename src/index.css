@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #111111;
+  --color-bg-tertiary: #141414;
+  --color-accent-green: #22c55e;
+  --color-accent-blue: #60a5fa;
+  --color-accent-orange: #fb923c;
+  --color-accent-red: #ef4444;
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-white font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/5 backdrop-blur-sm border border-white/10;
+  }
+  
+  .card-premium {
+    @apply bg-bg-tertiary rounded-2xl border border-white/5 p-6 shadow-sm;
+  }
+}

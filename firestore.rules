@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerifiedUser() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return isSignedIn() && (request.auth.token.email == 'vishvaksunkari@gmail.com' && request.auth.token.email_verified == true); }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isValidId(id) { 
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // --- Entity Validations ---
+
+    function isValidPublicUser(data) {
+      return data.keys().hasAll(['displayName', 'lastUpdated']) &&
+             data.keys().size() >= 2 &&
+             data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 100 &&
+             data.lastUpdated is number;
+    }
+
+    function isValidPrivateProfile(data) {
+      return data.keys().size() <= 10 &&
+             (!('age' in data) || (data.age is number && data.age >= 0 && data.age <= 120)) &&
+             (!('weight' in data) || (data.weight is number && data.weight >= 0 && data.weight <= 500)) &&
+             (!('height' in data) || (data.height is number && data.height >= 0 && data.height <= 300)) &&
+             (!('medicalConditions' in data) || (data.medicalConditions is list && data.medicalConditions.size() <= 20)) &&
+             (!('goals' in data) || (data.goals is list && data.goals.size() <= 10)) &&
+             (!('dietaryRestrictions' in data) || (data.dietaryRestrictions is list && data.dietaryRestrictions.size() <= 10)) &&
+             (!('allergies' in data) || (data.allergies is list && data.allergies.size() <= 20)) &&
+             (!('cuisinePreferences' in data) || (data.cuisinePreferences is list && data.cuisinePreferences.size() <= 10)) &&
+             (!('budgetPerWeek' in data) || (data.budgetPerWeek is number && data.budgetPerWeek >= 0));
+    }
+
+    function isValidMealLog(data, userId) {
+      return data.keys().hasAll(['userId', 'date', 'mealName', 'type', 'calories', 'protein', 'carbs', 'fat', 'timestamp']) &&
+             data.userId == userId &&
+             data.mealName is string && data.mealName.size() >= 2 && data.mealName.size() <= 200 &&
+             data.type in ['breakfast', 'lunch', 'dinner', 'snack'] &&
+             data.calories is number && data.calories >= 0 && data.calories <= 5000 &&
+             data.protein is number && data.protein >= 0 && data.protein <= 500 &&
+             data.carbs is number && data.carbs >= 0 && data.carbs <= 1000 &&
+             data.fat is number && data.fat >= 0 && data.fat <= 500 &&
+             data.timestamp is number;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.displayName is string; // Basic enforcement
+      allow create: if isOwner(userId) && isVerifiedUser() && isValidPublicUser(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidPublicUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'lastUpdated']);
+
+      match /private/profile {
+        allow get: if isOwner(userId) || isAdmin();
+        allow write: if (isOwner(userId) || isAdmin()) && isVerifiedUser() && isValidPrivateProfile(incoming());
+      }
+
+      match /meals/{mealId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isVerifiedUser() && isValidId(mealId) && isValidMealLog(incoming(), userId);
+        allow update: if (isOwner(userId) || isAdmin()) && isValidMealLog(incoming(), userId) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['mealName', 'calories', 'protein', 'carbs', 'fat', 'sodium', 'fiber', 'type']);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /household/{memberId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if (isOwner(userId) || isAdmin()) && isVerifiedUser() && isValidId(memberId);
+      }
+    }
+  }
+}

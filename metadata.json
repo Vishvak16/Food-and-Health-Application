@@ -1,0 +1,6 @@
+{
+  "name": "NutriWise AI",
+  "description": "A production-grade smart nutrition app that uses Gemini AI for meal analysis, personalized meal planning, and safety guardrails.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": []
+}

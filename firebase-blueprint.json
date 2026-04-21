@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "PublicUser": {
+      "title": "Public User",
+      "description": "Minimal public user info",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "lastUpdated": { "type": "number" }
+      },
+      "required": ["displayName", "lastUpdated"]
+    },
+    "PrivateProfile": {
+      "title": "Private User Profile",
+      "description": "Sensitive health and nutrition data",
+      "type": "object",
+      "properties": {
+        "age": { "type": "number" },
+        "weight": { "type": "number" },
+        "height": { "type": "number" },
+        "medicalConditions": { "type": "array", "items": { "type": "string" } },
+        "goals": { "type": "array", "items": { "type": "string" } },
+        "dietaryRestrictions": { "type": "array", "items": { "type": "string" } },
+        "allergies": { "type": "array", "items": { "type": "string" } },
+        "cuisinePreferences": { "type": "array", "items": { "type": "string" } },
+        "budgetPerWeek": { "type": "number" }
+      }
+    },
+    "MealLog": {
+      "title": "Meal Log Entry",
+      "description": "Detailed log of a single meal",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "profileId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "mealName": { "type": "string" },
+        "type": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"] },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "sodium": { "type": "number" },
+        "fiber": { "type": "number" },
+        "image": { "type": "string" },
+        "verificationMethod": { "type": "string", "enum": ["ai", "manual", "voice", "barcode"] },
+        "confidence": { "type": "number" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["userId", "date", "mealName", "type", "calories", "protein", "carbs", "fat", "timestamp"]
+    },
+    "HouseholdMember": {
+      "title": "Household Member",
+      "description": "Members of a user's household",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "memberType": { "type": "string", "enum": ["adult", "elderly", "child", "infant"] },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["name", "age", "memberType", "isActive"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "PublicUser",
+      "description": "Base user document"
+    },
+    "/users/{userId}/private/profile": {
+      "schema": "PrivateProfile",
+      "description": "PII-isolated health profile"
+    },
+    "/users/{userId}/meals/{mealId}": {
+      "schema": "MealLog",
+      "description": "Personal meal logs"
+    },
+    "/users/{userId}/household/{memberId}": {
+      "schema": "HouseholdMember",
+      "description": "Managed household profiles"
+    }
+  }
+}
